@@ -1,0 +1,5 @@
+bin
+build
+*.swp
+.ycm_extra_conf.*
+eigen
