@@ -11,13 +11,13 @@ term = []
 
 nontermRules = {}
 transitions = {}
-reductions = []
+reductions = {}
 
 CFGState = namedtuple('CFGState', ['rule', 'pos'])
 st = namedtuple('st', ['state', 'tok'])
 
 def keyer(x):
-    return ''.join(x.rule) + str(x.pos)
+    return ''.join(x.rule) + "A"*x.pos
 
 def createState(state):
     for cfgs in state:
@@ -126,6 +126,78 @@ def makeFollow():
                         if e not in follow[rule[i]]:
                             follow[rule[i]].append(e)
 
+def makeRule(r):
+    if r.pos < len(r.rule):
+        if r.rule[r.pos] == "e":
+            nR = makeRule(CFGState(r.rule, r.pos+1))
+            return nR
+
+    return r
+
+def cClose(config):
+    cS = config
+    while True:
+        added = False
+        i = 0
+        while i < len(cS):
+            r = cS[i]
+            if r.pos < len(r.rule):
+                if r.rule[r.pos] in nonterm:
+                    for nR in nontermRules[r.rule[r.pos]]:
+                        nS = makeRule(CFGState(nR, 1))
+                        if nS not in cS:
+                            cS.append(nS)
+                            added = True
+            i += 1
+
+        if added == False:
+            break
+
+    
+    cS.sort(key=keyer)
+
+    return cS
+
+def makeConfigSet(rule):
+    #if rule[1] == "e":
+    #    return [CFGState(rule, 2)]
+
+    cS = [makeRule(CFGState(rule,1))]
+
+    if rule[1] in term:
+        return cS
+
+    return cClose(cS)
+
+def succ(c,x):
+    nS = []
+
+    for r in c:
+        if r.pos < len(r.rule):
+            if r.rule[r.pos] == x:
+                nS.append(makeRule(CFGState(r.rule, r.pos+1)))
+
+    return cClose(nS)
+
+def makeF():
+    f = [makeConfigSet(rules[0])]
+
+    while True:
+        added = False
+        for c in f:
+            for r in c:
+                for x in r.rule:
+                    s = succ(c, x)
+                    if len(s) != 0:
+                        if s not in f:
+                            f.append(s)
+                            added = True
+
+        if added == False:
+            break
+
+    return f
+
     
 def main():
     if(len(sys.argv) < 3):
@@ -138,116 +210,88 @@ def main():
         rules.append(line.strip().split(" "))
     inFile.close()
 
+    # Augment the grammar
+    #rules.insert(0,["S'",rules[0][0],"$"])
+
     for rule in rules:
         tok = rule[0]
         if tok not in nonterm:
             nonterm.append(tok)
             nontermRules[tok] = []
 
-    makeFirst()
-    makeFollow()
-
-    #for t in nonterm:
-    #    print("first of {} is {}".format(t, first[t]))
-
-    #for t in nonterm:
-    #    print("follow of {} is {}".format(t, follow[t]))
-
-    oldR = rules[:]
-    nr = []
-    for rule in rules:
-        for f in follow[rule[0]]:
-            nr.append(rule + [f])
-
-    i = 0
-    while i < len(rules):
-        if len(follow[rules[i][0]]) != 0:
-            rules.remove(rules[i])
-            i = 0
-        else:
-            i += 1
-
-    rules.extend(nr)
-
-    #for rule in rules:
-    #    print("{} -> {}".format(rule[0],' '.join(rule[1:])))
-
     for rule in rules:
         nontermRules[rule[0]].append(rule)
 
-    states = [[CFGState(rules[0], 1)]]
+    makeFirst()
+    makeFollow()
 
-    # Create inital state
-    createState(states[0])
+    debug = True
+    if debug:
+        for t in nonterm:
+            print("first of {} is {}".format(t, first[t]))
 
-    while True:
-        some = False
-        for state in states:
-            # If dot precedes non-term add non-term rules
-            for cfgs in state:
-                if cfgs.pos >= len(cfgs.rule):
-                    continue
-                if cfgs.rule[cfgs.pos] in nonterm:
-                    for rule in nontermRules[cfgs.rule[cfgs.pos]]:
-                        c = CFGState(rule, 1)
-                        if c not in state:
-                            some = True
-                            state.append(c)
+        for t in nonterm:
+            print("follow of {} is {}".format(t, follow[t]))
 
-            # Add transitions
-            for cfg in state:
-                if cfg.pos < len(cfg.rule):
-                    s = [CFGState(cfg.rule, cfg.pos+1)]
-                    createState(s)
-                    trans = st(states.index(state), cfg.rule[cfg.pos])
-                    if s not in states:
-                        some = True
-                        states.append(s)
-                        
-                    if trans in transitions:
-                        s1 = states[transitions[trans]]
-                        #appendState(s1, s)
-                        #createState(s1)
-                    else:
-                        transitions[trans] = states.index(s)
+    F = makeF()
 
-            allEnd = True
-            for cfg in state:
-                if cfg.pos < len(cfg.rule):
-                    allEnd = False
+    print(F[30])
+    print(succ(F[30], "RETURN"))
 
-            if allEnd and len(state) != 1:
-                print("WE GOT REDUCE REDUCE ERROR")
-                print(state)
-                return 1
+    numT = 0
+    for i in F:
+        ind = F.index(i)
+        for cfg in i:
+            if cfg.pos >= len(cfg.rule):
+                if cfg.rule != rules[0]:
+                    for tok in follow[cfg.rule[0]]:
+                        S = st(ind, tok)
+                        if S in reductions:
+                            print("Reduce reduce error on".format(S))
+                            return 1
+                        reductions[st(ind,tok)] = rules.index(cfg.rule)
+                        numT += 1
 
-            oneEnd = False
-            for cfg in state:
-                if cfg.pos >= len(cfg.rule):
-                    oneEnd = True
+            else:
+                tok = cfg.rule[cfg.pos]
+                if tok in term:
+                    #j = F.index(succ(i, tok))
+                    sL = succ(i, tok)
+                    if len(sL) != 0:
+                        j = F.index(sL)
+                        transitions[st(ind, tok)] = j
+                        numT += 1
+        
 
-            if oneEnd and len(state) != 1:
-                print("WE GOT SHIFT REDUCE ERROR")
-                print(state)
-                return 1
+            for nt in nonterm:
+                sL = succ(i, nt)
+                if len(sL) != 0:
+                    j = F.index(sL)
+                    transitions[st(ind, nt)] = j
+                    numT += 1
 
-            if len(state) == 1:
-                if(state[0].pos >= len(state[0].rule)):
-                    if states.index(state) not in reductions:
-                        reductions.append(states.index(state))
 
-        if some == False:
-            break
+    for k in transitions:
+        if k in reductions:
+            print("Shift reduce error for {}".format(k))
 
-    for state in states:
-        print(state)
-
+    of = open(sys.argv[2], "w")
+    of.write("{}\n".format(len(term)))
+    for t in term:
+        of.write("{}\n".format(t))
+    of.write("{}\n".format(len(nonterm)))
+    for nt in nonterm:
+        of.write("{}\n".format(nt))
+    of.write("{}\n".format(rules[0][0]))
+    of.write("{}\n".format(len(rules)))
+    for r in rules:
+        of.write("{}\n".format(' '.join(r)))
+    of.write("{}\n{}\n".format(len(F), len(transitions)+len(reductions)))
     for t,s in transitions.iteritems():
-        if s in reductions:
-            ruleNum = rules.index(states[s][0].rule)
-            print("{} reduces to {}".format(t,ruleNum))
-        else:
-            print("{} shifts to {}".format(t,s))
+        of.write("{} {} shift {}\n".format(t.state, t.tok, s))
+    for t,s in reductions.iteritems():
+        of.write("{} {} reduce {}\n".format(t.state, t.tok, s))
+
     return 0
 
 if __name__ == "__main__":
