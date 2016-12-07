@@ -52,6 +52,25 @@ void arrayPush(struct Array *ary, void *elem) {
     ary->length++;
 }
 
+void arrayPop(struct Array *ary, void *store) {
+    if(ary->length == 0) {
+        logError("Can't pop off element from empty array");
+    }
+    ary->length--;
+
+    if(store != NULL) {
+        memcpy(store, &ary->data[ary->elemSize*ary->length], ary->elemSize);
+    }
+}
+
+void arrayDelete(struct Array *ary, size_t index) {
+    for(size_t i=index+1; i <= ary->length; i++) {
+        memcpy(&ary->data[ary->elemSize*(i-1)], &ary->data[ary->elemSize*i], ary->elemSize);
+    }
+
+    ary->length--;
+}
+
 void *arrayGet(struct Array *ary, size_t index) {
     return &ary->data[ary->elemSize*index];
 }
