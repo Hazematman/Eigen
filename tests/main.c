@@ -20,5 +20,7 @@ int main() {
 
     printf("Running Array Tests\n");
     arrayTest();
+
+    printf("Tests completed succefully!\n");
     return 0;
 }
