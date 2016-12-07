@@ -64,6 +64,10 @@ void arrayPop(struct Array *ary, void *store) {
 }
 
 void arrayDelete(struct Array *ary, size_t index) {
+    if(ary->length == 0) {
+        logError("Cant delete elements from empty array");
+    }
+
     for(size_t i=index+1; i <= ary->length; i++) {
         memcpy(&ary->data[ary->elemSize*(i-1)], &ary->data[ary->elemSize*i], ary->elemSize);
     }
