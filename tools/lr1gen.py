@@ -124,21 +124,26 @@ def makeFollow():
         else:
             follow[nt] = []
 
-    for nt in nonterm:
-        for rule in rules:
-            if nt in rule[1:]:
-                i = rule[1:].index(nt)
-                i += 1
-                if i == (len(rule) - 1):
-                    for e in follow[rule[0]]:
-                        if e not in follow[rule[i]]:
-                            follow[rule[i]].append(e)
-                else:
-                    #l = first[rule[i+1]][:]
-                    l = multiFirst(rule[i+1:])
-                    for e in l:
-                        if e != "e" and e not in follow[rule[i]]:
-                            follow[rule[i]].append(e)
+    change = True
+    while change == True:
+        for nt in nonterm:
+            change = False
+            for rule in rules:
+                if nt in rule[1:]:
+                    i = rule[1:].index(nt)
+                    i += 1
+                    if i == (len(rule) - 1):
+                        for e in follow[rule[0]]:
+                            if e not in follow[rule[i]]:
+                                follow[rule[i]].append(e)
+                                change = True
+                    else:
+                        #l = first[rule[i+1]][:]
+                        l = multiFirst(rule[i+1:])
+                        for e in l:
+                            if e != "e" and e not in follow[rule[i]]:
+                                follow[rule[i]].append(e)
+                                change = True
 
 def makeRule(r):
     if r.pos < len(r.rule):
@@ -250,6 +255,9 @@ def main():
             print("follow of {} is {}".format(t, follow[t]))
 
     F = makeF()
+
+    #for r in rules:
+    #    print("{} -> {}".format(r[0],' '.join(r[1:])))
 
     numT = 0
     for i in F:
