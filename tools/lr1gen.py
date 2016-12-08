@@ -294,6 +294,7 @@ def main():
     for k in transitions:
         if k in reductions:
             print("Shift reduce error for {}".format(k))
+            return 1
 
     of = open(sys.argv[2], "w")
     of.write("{}\n".format(len(term)))
