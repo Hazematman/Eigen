@@ -98,10 +98,29 @@ def multFirst(l):
 
     return ol
 
+def multiFirst(l):
+    cur = 0
+    o = []
+    while True:
+        if cur >= len(l):
+            break
+
+        for e in first[l[cur]]:
+            if e not in o:
+                o.append(e)
+
+        if "e" in first[l[cur]]:
+            cur += 1
+        else:
+            break
+
+    return o
+    
+
 def makeFollow():
     for nt in nonterm:
         if nt == rules[0][0]:
-            follow[nt] = []
+            follow[nt] = ['$']
         else:
             follow[nt] = []
 
@@ -115,15 +134,10 @@ def makeFollow():
                         if e not in follow[rule[i]]:
                             follow[rule[i]].append(e)
                 else:
-                    l = first[rule[i+1]][:]
-                    if "e" in l:
-                        for e in follow[rule[0]]:
-                            if e not in follow[rule[i]]:
-                                follow[rule[i]].append(e)
-                        l.remove("e")
-
+                    #l = first[rule[i+1]][:]
+                    l = multiFirst(rule[i+1:])
                     for e in l:
-                        if e not in follow[rule[i]]:
+                        if e != "e" and e not in follow[rule[i]]:
                             follow[rule[i]].append(e)
 
 def makeRule(r):
@@ -222,6 +236,8 @@ def main():
     for rule in rules:
         nontermRules[rule[0]].append(rule)
 
+
+
     makeFirst()
     makeFollow()
 
@@ -234,9 +250,6 @@ def main():
             print("follow of {} is {}".format(t, follow[t]))
 
     F = makeF()
-
-    print(F[30])
-    print(succ(F[30], "RETURN"))
 
     numT = 0
     for i in F:
@@ -261,7 +274,6 @@ def main():
                         j = F.index(sL)
                         transitions[st(ind, tok)] = j
                         numT += 1
-        
 
             for nt in nonterm:
                 sL = succ(i, nt)
