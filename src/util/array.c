@@ -1,3 +1,4 @@
+#include <stdio.h>
 #include <stdint.h>
 #include <string.h>
 #include "array.h"
@@ -22,7 +23,7 @@ struct Array *arrayCreate(size_t eSize) {
     ary->cap = START_SIZE;
     ary->length = 0;
 
-    ary->data = malloc(sizeof(uint8_t)*ary->elemSize);
+    ary->data = malloc(sizeof(uint8_t)*ary->elemSize*START_SIZE);
     if(ary->data == NULL) {
         logError("Out of memory!");
     }
@@ -42,7 +43,7 @@ size_t arrayLength(struct Array *ary) {
 void arrayPush(struct Array *ary, void *elem) {
     if(ary->length == ary->cap) {
         ary->cap *= 2;
-        ary->data = realloc(ary->data, sizeof(uint8_t)*ary->cap);
+        ary->data = realloc(ary->data, sizeof(uint8_t)*ary->elemSize*ary->cap);
         if(ary->data == NULL) {
             logError("Out of Memory!");
         }

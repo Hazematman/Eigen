@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "utilTest/arrayTest.h"
+#include "utilTest/dfaTest.h"
 #include "error.h"
 #include "tassert.h"
 
@@ -20,6 +21,9 @@ int main() {
 
     printf("Running Array Tests\n");
     arrayTest();
+
+    printf("Running Dfa Tests\n");
+    dfaTest();
 
     printf("Tests completed succefully!\n");
     return 0;

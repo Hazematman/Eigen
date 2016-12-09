@@ -4,10 +4,44 @@
 #include "error.h"
 #include "../tassert.h"
 
+struct Thing {
+    int a;
+    int b;
+};
+
 static struct Array *a;
 static int testVal1 = 10;
 static int testVal2 = 3;
 static int testVal3 = 25;
+
+static struct Array *b;
+static struct Thing t1 = {1,2};
+static struct Thing t2 = {3,4};
+
+static void largeArray() {
+    b = arrayCreate(sizeof(struct Thing));
+    tassert(b != NULL);
+
+    arrayPush(b, &t1);
+    arrayPush(b, &t2);
+
+    struct Thing val1 = *(struct Thing*)arrayGet(b, 0);
+    struct Thing val2 = *(struct Thing*)arrayGet(b, 1);
+
+    tassert(arrayLength(b) == 2);
+    tassert(val1.a == t1.a);
+    tassert(val1.b == t1.b);
+    tassert(val2.a == t2.a);
+    tassert(val2.b == t2.b);
+
+    arrayDelete(b, 0);
+    val1 = *(struct Thing*)arrayGet(b, 0);
+    tassert(arrayLength(b) == 1);
+    tassert(val1.a == t2.a);
+    tassert(val1.b == t2.b);
+
+    arrayDestroy(b);
+}
 
 static void testCreateArray() {
     a = arrayCreate(sizeof(int));
@@ -92,4 +126,6 @@ void arrayTest() {
     testPop();
     testDelete();
     testCleanup();
+
+    largeArray();
 }
