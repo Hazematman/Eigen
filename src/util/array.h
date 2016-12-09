@@ -19,5 +19,6 @@ void arrayPush(struct Array *ary, void *elem);
 void arrayPop(struct Array *ary, void *store);
 void arrayDelete(struct Array *ary, size_t index);
 void *arrayGet(struct Array *ary, size_t index);
+void *arrayGetData(struct Array *ary);
 
 #endif

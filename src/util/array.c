@@ -79,3 +79,7 @@ void arrayDelete(struct Array *ary, size_t index) {
 void *arrayGet(struct Array *ary, size_t index) {
     return &ary->data[ary->elemSize*index];
 }
+
+void *arrayGetData(struct Array *ary) {
+    return ary->data;
+}

@@ -45,6 +45,12 @@ void dfaAddTransition(struct Dfa *dfa, void *token, struct Dfa *state) {
     arrayPush(dfa->map, tempData);
 }
 
+void dfaAddListTransitions(struct Dfa *dfa, void *tokens, size_t length, struct Dfa *state) {
+    for(size_t i=0; i < length; i++) {
+        dfaAddTransition(dfa, tokens+(i*dfa->tokenSize), state);
+    }
+}
+
 struct Dfa *dfaTransition(struct Dfa *dfa, void *token) {
     struct Dfa *out = NULL;
     size_t len = arrayLength(dfa->map);

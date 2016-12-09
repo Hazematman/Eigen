@@ -14,6 +14,9 @@ static int tok3 = 3;
 static int tok4 = 4;
 static int tok5 = 5;
 
+static int tokLst[] = {6,7,8,9,10};
+static int tokLstSize = sizeof(tokLst)/sizeof(int);
+
 static void initStates() {
     state1 = dfaCreate(sizeof(int));
     tassert(state1 != NULL);
@@ -36,6 +39,8 @@ static void initStates() {
     dfaAddTransition(state4, &tok4, state4);
     dfaAddTransition(state3, &tok5, state1);
     dfaAddTransition(state2, &tok5, state4);
+
+    dfaAddListTransitions(state2, tokLst, tokLstSize, state3);
 
     tassert(dfaGetEnd(state1) == false);
     tassert(dfaGetEnd(state2) == false);
@@ -65,6 +70,13 @@ static void transition() {
 
     state = dfaTransition(state4, &tok4);
     tassert(state == state4);
+
+    /* Test all transitions made from the token list */
+    for(size_t i=0; i < tokLstSize; i++) {
+        state = dfaTransition(state2, &tokLst[i]);
+        //printf("%p\n", state);
+        tassert(state == state3);
+    }
 }
 
 static void cleanUp() {
