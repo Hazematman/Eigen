@@ -12,6 +12,8 @@ enum stateNames {
     STATE_amp,
     STATE_pipe,
     STATE_dot,
+    STATE_quote,
+    STATE_escape,
     STATE_NUMBER_after_dot,
     STATE_LPAREN,
     STATE_RPAREN,
@@ -46,6 +48,8 @@ static struct Dfa *states[NUM_STATES];
 
 static char *alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"; 
 static char *alphabetNums = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"; 
+static char *all = " !\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~";
+static char *almostAll = " !#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[]^_`abcdefghijklmnopqrstuvwxyz{|}~";
 static char *nums ="0123456789";
 static char *whitespace = "\t\n\r "; 
 static char lparen = '(';
@@ -59,6 +63,7 @@ static char plus = '+';
 static char minus = '-';
 static char star = '*';
 static char slash = '/';
+static char backSlash = '\\';
 static char percent = '%';
 static char comma = ',';
 static char semi = ';';
@@ -68,6 +73,7 @@ static char amp = '&';
 static char pipe = '|';
 static char not = '!';
 static char dot = '.';
+static char quote = '"';
 static char null = '\0';
 
 static size_t getStateIndex(struct Dfa *state) {
@@ -229,11 +235,14 @@ void scannerInit() {
     dfaSetEnd(states[STATE_OR], true);
     dfaSetEnd(states[STATE_whitespace], true);
     dfaSetEnd(states[STATE_NUMBER_after_dot], true);
+    dfaSetEnd(states[STATE_STRING], true);
 
     size_t numLen = strlen(nums);
     size_t alphabetLen = strlen(alphabet);
     size_t alphabetNumsLen = strlen(alphabetNums);
     size_t whitespaceLen = strlen(whitespace);
+    size_t allLen = strlen(all);
+    size_t almostAllLen = strlen(almostAll);
 
     dfaAddTransition(states[STATE_start], &null, states[STATE_error]);
     dfaAddTransition(states[STATE_start], &lparen, states[STATE_LPAREN]);
@@ -255,6 +264,7 @@ void scannerInit() {
     dfaAddTransition(states[STATE_start], &amp, states[STATE_amp]);
     dfaAddTransition(states[STATE_start], &pipe, states[STATE_pipe]);
     dfaAddTransition(states[STATE_start], &not, states[STATE_not]);
+    dfaAddTransition(states[STATE_start], &quote, states[STATE_quote]);
     dfaAddListTransitions(states[STATE_start], nums, numLen, states[STATE_NUMBER]);
     dfaAddListTransitions(states[STATE_start], alphabet, alphabetLen, states[STATE_ID]);
     dfaAddListTransitions(states[STATE_start], whitespace, whitespaceLen, states[STATE_whitespace]);
@@ -280,6 +290,12 @@ void scannerInit() {
     dfaAddTransition(states[STATE_GTHAN], &equal, states[STATE_GETHAN]);
 
     dfaAddTransition(states[STATE_SLASH], &slash, states[STATE_comment]);
+
+    dfaAddListTransitions(states[STATE_quote], almostAll, almostAllLen, states[STATE_quote]);
+    dfaAddTransition(states[STATE_quote], &quote, states[STATE_STRING]);
+    dfaAddTransition(states[STATE_quote], &backSlash, states[STATE_escape]);
+
+    dfaAddListTransitions(states[STATE_escape], all, allLen, states[STATE_quote]);
 
     dfaAddListTransitions(states[STATE_whitespace], whitespace, whitespaceLen, states[STATE_whitespace]);
 }

@@ -18,6 +18,13 @@ static size_t test2Len = sizeof(test2Types)/sizeof(enum TokenType);
 
 static char *test3 = "2.";
 static char *test4 = "2.23213a";
+static char *test5 = "\"Hello World!!!!! ";
+static char *test6 = "\"Hello World\\\"";
+
+static char *test7 = "\"Hello World!\"";
+static enum TokenType test7Types[] = {TOKEN_STRING};
+static char *test7Strs[] = {"\"Hello World!\""};
+static size_t test7Len = sizeof(test7Types)/sizeof(enum TokenType);
 
 static void doTest(char *input, enum TokenType *tokens, char *strs[], size_t len) {
     struct Array *toks;
@@ -60,6 +67,10 @@ void scannerTest() {
 
     doTestFail(test3);
     doTestFail(test4);
+    doTestFail(test5);
+    doTestFail(test6);
+
+    doTest(test7, test7Types, test7Strs, test7Len);
 
     scannerDeinit();
 }
