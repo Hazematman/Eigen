@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include "utilTest/arrayTest.h"
 #include "utilTest/dfaTest.h"
+#include "scriptTest/scannerTest.h"
 #include "error.h"
 #include "tassert.h"
 
@@ -24,6 +25,9 @@ int main() {
 
     printf("Running Dfa Tests\n");
     dfaTest();
+
+    printf("Running scanner Tests\n");
+    scannerTest();
 
     printf("Tests completed succefully!\n");
     return 0;

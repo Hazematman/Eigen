@@ -65,9 +65,19 @@ static char rbrack = ']';
 static char amp = '&';
 static char pipe = '|';
 static char not = '!';
+static char null = '\0';
+
+static size_t getStateIndex(struct Dfa *state) {
+    for(size_t i=0; i < NUM_STATES; i++) {
+        if(state == states[i]) {
+            return i;
+        }
+    }
+    return -1;
+}
 
 static enum TokenType getStateType(struct Dfa *state) {
-    switch(&state - &states[0]) {
+    switch(getStateIndex(state)) {
         case STATE_LPAREN:
             return TOKEN_LPAREN;
         case STATE_RPAREN:
@@ -123,12 +133,44 @@ static enum TokenType getStateType(struct Dfa *state) {
     }
 }
 
+static struct Token getToken(struct Dfa *state, char *str) {
+    struct Token t;
+    enum TokenType type = getStateType(state);
+
+    if(type == TOKEN_ID) {
+        if(strcmp("func", str) == 0) {
+            type = TOKEN_FUNC;
+        } else if(strcmp("true", str) == 0) {
+            type = TOKEN_TRUE;
+        } else if(strcmp("false", str) == 0) {
+            type = TOKEN_FALSE;
+        } else if(strcmp("for", str) == 0) {
+            type = TOKEN_FOR;
+        } else if(strcmp("while", str) == 0) {
+            type = TOKEN_WHILE;
+        } else if(strcmp("if", str) == 0) {
+            type = TOKEN_IF;
+        } else if(strcmp("else", str) == 0) {
+            type = TOKEN_ELSE;
+        } else if(strcmp("var", str) == 0) {
+            type = TOKEN_VAR;
+        } else if(strcmp("return", str) == 0) {
+            type = TOKEN_RETURN;
+        } else if(strcmp("null", str) == 0) {
+            type = TOKEN_NULL;
+        }
+    }
+
+    t = tokenCreate(type, str);
+    return t;
+} 
+
 static char *strdupLen(char *test, size_t start, size_t end) {
-    size_t len = end - start + 2;
+    size_t len = end - start + 1;
     char *out = malloc(sizeof(char)*len);
 
-    for(size_t i=start; i <= end; i++) {
-        out[i-start] = test[start];
+    for(size_t i=start; i < end; i++) {
+        out[i-start] = test[i];
     }
 
     out[len-1] = '\0';
@@ -141,6 +183,15 @@ struct Token tokenCreate(enum TokenType type, char *str) {
     t.type = type;
     t.str = str;
     return t;
+}
+
+void tokenArrayDestroy(struct Array *ary) {
+    for(size_t i=0; i < arrayLength(ary); i++) {
+        struct Token *t = arrayGet(ary, i);
+        free(t->str);
+    }
+
+    arrayDestroy(ary);
 }
 
 void scannerInit() {
@@ -179,6 +230,7 @@ void scannerInit() {
     size_t alphabetNumsLen = strlen(alphabetNums);
     size_t whitespaceLen = strlen(whitespace);
 
+    dfaAddTransition(states[STATE_start], &null, states[STATE_error]);
     dfaAddTransition(states[STATE_start], &lparen, states[STATE_LPAREN]);
     dfaAddTransition(states[STATE_start], &rparen, states[STATE_RPAREN]);
     dfaAddTransition(states[STATE_start], &lbrace, states[STATE_LBRACE]);
@@ -220,27 +272,34 @@ void scannerInit() {
     dfaAddListTransitions(states[STATE_whitespace], whitespace, whitespaceLen, states[STATE_whitespace]);
 }
 
+void scannerDeinit() {
+    for(size_t i=0; i < NUM_STATES; i++) {
+        dfaDestroy(states[i]);
+    }
+}
+
 struct Array *scannerParse(char *text) {
     // TODO need to think of a way to do propper error handling and propagation
     struct Array *out = arrayCreate(sizeof(struct Token));
     struct Dfa *state = states[STATE_start];
-    size_t lineLen = strlen(text);
+    size_t lineLen = strlen(text) + 1;
     size_t start = 0;
     for(size_t i=0; i < lineLen; i++) {
         struct Dfa *newState = dfaTransition(state, &text[i]);
         if(newState == NULL) {
             if(dfaGetEnd(state) == false) {
-                printf("Error parsing token %c on state %p\n", text[i], state);
-                return out;
+                printf("Error parsing token %c on state %ld\n", text[i], getStateIndex(state));
+                arrayDestroy(out);
+                return NULL;
             }
             if(state != states[STATE_whitespace] && state != states[STATE_comment]) {
-                struct Token t = tokenCreate(getStateType(state), strdupLen(text, start, i));
+                struct Token t = getToken(state, strdupLen(text, start, i));
                 arrayPush(out, &t);
             }
 
             state = states[STATE_start];
-            i--;
             start = i;
+            i--;
         } else {
             state = newState;
         }

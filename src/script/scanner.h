@@ -48,8 +48,10 @@ struct Token {
 };
 
 struct Token tokenCreate(enum TokenType type, char *str);
+void tokenArrayDestroy(struct Array *ary);
 
 void scannerInit();
+void scannerDeinit();
 struct Array *scannerParse(char *text);
 
 #endif
