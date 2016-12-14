@@ -11,6 +11,8 @@ enum stateNames {
     STATE_error,
     STATE_amp,
     STATE_pipe,
+    STATE_dot,
+    STATE_NUMBER_after_dot,
     STATE_LPAREN,
     STATE_RPAREN,
     STATE_LBRACE,
@@ -65,6 +67,7 @@ static char rbrack = ']';
 static char amp = '&';
 static char pipe = '|';
 static char not = '!';
+static char dot = '.';
 static char null = '\0';
 
 static size_t getStateIndex(struct Dfa *state) {
@@ -123,6 +126,7 @@ static enum TokenType getStateType(struct Dfa *state) {
         case STATE_ID:
             return TOKEN_ID;
         case STATE_NUMBER:
+        case STATE_NUMBER_after_dot:
             return TOKEN_NUMBER;
         case STATE_STRING:
             return TOKEN_STRING;
@@ -224,6 +228,7 @@ void scannerInit() {
     dfaSetEnd(states[STATE_AND], true);
     dfaSetEnd(states[STATE_OR], true);
     dfaSetEnd(states[STATE_whitespace], true);
+    dfaSetEnd(states[STATE_NUMBER_after_dot], true);
 
     size_t numLen = strlen(nums);
     size_t alphabetLen = strlen(alphabet);
@@ -258,6 +263,13 @@ void scannerInit() {
 
     dfaAddListTransitions(states[STATE_NUMBER], nums, numLen, states[STATE_NUMBER]);
     dfaAddListTransitions(states[STATE_NUMBER], alphabet, alphabetLen, states[STATE_error]);
+    dfaAddTransition(states[STATE_NUMBER], &dot, states[STATE_dot]);
+
+    dfaAddListTransitions(states[STATE_dot], nums, numLen, states[STATE_NUMBER_after_dot]);
+    dfaAddListTransitions(states[STATE_dot], alphabet, alphabetLen, states[STATE_error]);
+
+    dfaAddListTransitions(states[STATE_NUMBER_after_dot], nums, numLen, states[STATE_NUMBER_after_dot]);
+    dfaAddListTransitions(states[STATE_NUMBER_after_dot], alphabet, alphabetLen, states[STATE_error]);
 
     dfaAddTransition(states[STATE_BECOMES], &equal, states[STATE_EQUAL]);
 
@@ -289,7 +301,7 @@ struct Array *scannerParse(char *text) {
         if(newState == NULL) {
             if(dfaGetEnd(state) == false) {
                 printf("Error parsing token %c on state %ld\n", text[i], getStateIndex(state));
-                arrayDestroy(out);
+                tokenArrayDestroy(out);
                 return NULL;
             }
             if(state != states[STATE_whitespace] && state != states[STATE_comment]) {
