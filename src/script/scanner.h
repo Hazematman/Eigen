@@ -1,5 +1,6 @@
 #ifndef SCANNER_H
 #define SCANNER_H
+#include "util/array.h"
 
 enum TokenType {
     TOKEN_VAR,
@@ -37,6 +38,8 @@ enum TokenType {
     TOKEN_ID,
     TOKEN_NUMBER,
     TOKEN_STRING,
+
+    TOKEN_INVALID,
 };
 
 struct Token {
@@ -47,5 +50,6 @@ struct Token {
 struct Token tokenCreate(enum TokenType type, char *str);
 
 void scannerInit();
+struct Array *scannerParse(char *text);
 
 #endif
