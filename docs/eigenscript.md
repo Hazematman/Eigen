@@ -98,3 +98,32 @@ parseable format (e represents epsilon):
     arglist -> expr COMMA arglist
     lvalue -> ID
     lvalue -> ID LBRACK expr RBRACK
+
+# Examples
+
+Some examples of ES scripts would be a basic example like so:
+
+    print("Hello World!\n");
+
+to more complex examples like this:
+
+    func add(a,b) {
+        return a + b;
+    }
+
+    print("1 + 2 = "+add(1,2));
+
+You can also create variables like this:
+
+    var a = 10
+    var b = 3
+
+    print("a is "+a+" b is "+b)
+
+You can also use arrays like so:
+
+    var array1 = [] //This is an empty array
+    var array2 = [10] //This is an array with 10 elements
+
+    array[0] = 10 // Arrays are zero indexed
+    array[1] = "hello" // Arrays can contain any type
