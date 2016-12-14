@@ -14,6 +14,9 @@ enum stateNames {
     STATE_dot,
     STATE_quote,
     STATE_escape,
+    STATE_block_start,
+    STATE_block_end,
+    STATE_BLOCK,
     STATE_NUMBER_after_dot,
     STATE_LPAREN,
     STATE_RPAREN,
@@ -50,6 +53,8 @@ static char *alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
 static char *alphabetNums = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"; 
 static char *all = " !\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~";
 static char *almostAll = " !#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[]^_`abcdefghijklmnopqrstuvwxyz{|}~";
+static char *noSlash = " !\"#$%&'()+,-.0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~";
+static char *noStar = " !\"#$%&'()+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~";
 static char *nums ="0123456789";
 static char *whitespace = "\t\n\r "; 
 static char lparen = '(';
@@ -236,6 +241,9 @@ void scannerInit() {
     dfaSetEnd(states[STATE_whitespace], true);
     dfaSetEnd(states[STATE_NUMBER_after_dot], true);
     dfaSetEnd(states[STATE_STRING], true);
+    dfaSetEnd(states[STATE_whitespace], true);
+    dfaSetEnd(states[STATE_comment], true);
+    dfaSetEnd(states[STATE_BLOCK], true);
 
     size_t numLen = strlen(nums);
     size_t alphabetLen = strlen(alphabet);
@@ -243,6 +251,8 @@ void scannerInit() {
     size_t whitespaceLen = strlen(whitespace);
     size_t allLen = strlen(all);
     size_t almostAllLen = strlen(almostAll);
+    size_t noSlashLen = strlen(noSlash);
+    size_t noStarLen = strlen(noStar);
 
     dfaAddTransition(states[STATE_start], &null, states[STATE_error]);
     dfaAddTransition(states[STATE_start], &lparen, states[STATE_LPAREN]);
@@ -290,6 +300,16 @@ void scannerInit() {
     dfaAddTransition(states[STATE_GTHAN], &equal, states[STATE_GETHAN]);
 
     dfaAddTransition(states[STATE_SLASH], &slash, states[STATE_comment]);
+    dfaAddTransition(states[STATE_SLASH], &star, states[STATE_block_start]);
+
+    dfaAddTransition(states[STATE_block_start], &star, states[STATE_block_end]);
+    dfaAddListTransitions(states[STATE_block_start], noStar, noStarLen, states[STATE_block_start]);
+
+    dfaAddTransition(states[STATE_block_end], &slash, states[STATE_BLOCK]);
+    dfaAddTransition(states[STATE_block_end], &star, states[STATE_block_end]);
+    dfaAddListTransitions(states[STATE_block_end], noSlash, noSlashLen, states[STATE_block_end]);
+
+    dfaAddListTransitions(states[STATE_comment], all, allLen, states[STATE_comment]);
 
     dfaAddListTransitions(states[STATE_quote], almostAll, almostAllLen, states[STATE_quote]);
     dfaAddTransition(states[STATE_quote], &quote, states[STATE_STRING]);
@@ -298,6 +318,7 @@ void scannerInit() {
     dfaAddListTransitions(states[STATE_escape], all, allLen, states[STATE_quote]);
 
     dfaAddListTransitions(states[STATE_whitespace], whitespace, whitespaceLen, states[STATE_whitespace]);
+    dfaAddTransition(states[STATE_whitespace], &null, states[STATE_whitespace]);
 }
 
 void scannerDeinit() {
@@ -316,11 +337,11 @@ struct Array *scannerParse(char *text) {
         struct Dfa *newState = dfaTransition(state, &text[i]);
         if(newState == NULL) {
             if(dfaGetEnd(state) == false) {
-                printf("Error parsing token %c on state %ld\n", text[i], getStateIndex(state));
+                printf("Error parsing token \"%c\" (%d) on state %ld at %ld\n", text[i], text[i], getStateIndex(state), i);
                 tokenArrayDestroy(out);
                 return NULL;
             }
-            if(state != states[STATE_whitespace] && state != states[STATE_comment]) {
+            if(state != states[STATE_whitespace] && state != states[STATE_comment] && state != states[STATE_BLOCK]) {
                 struct Token t = getToken(state, strdupLen(text, start, i));
                 arrayPush(out, &t);
             }
