@@ -56,6 +56,11 @@ static char *test14 = "/* This should fail";
 
 static char *test15 = "/* this should also fail /";
 
+static char *test16 = "func blah(a,b) {\n return a*b;\n}\n b = bleh(10,2);\n c = true;\n";
+static enum TokenType test16Types[] = {TOKEN_FUNC, TOKEN_ID, TOKEN_LPAREN, TOKEN_ID, TOKEN_COMMA, TOKEN_ID, TOKEN_RPAREN, TOKEN_LBRACE, TOKEN_RETURN, TOKEN_ID, TOKEN_STAR, TOKEN_ID, TOKEN_SEMICOLON, TOKEN_RBRACE, TOKEN_ID, TOKEN_BECOMES, TOKEN_ID, TOKEN_LPAREN, TOKEN_NUMBER, TOKEN_COMMA, TOKEN_NUMBER, TOKEN_RPAREN, TOKEN_SEMICOLON, TOKEN_ID, TOKEN_BECOMES, TOKEN_TRUE, TOKEN_SEMICOLON};
+static char *test16Strs[] = {"func", "blah", "(", "a", ",", "b", ")", "{", "return", "a", "*", "b", ";", "}", "b", "=", "bleh", "(", "10", ",", "2",")",";","c","=","true",";"}; 
+static size_t test16Len = sizeof(test16Types)/sizeof(enum TokenType);
+
 static void doTest(char *input, enum TokenType *tokens, char *strs[], size_t len) {
     struct Array *toks;
 
@@ -118,6 +123,8 @@ void scannerTest() {
 
     doTestFail(test14);
     doTestFail(test15);
+
+    doTest(test16, test16Types, test16Strs, test16Len);
 
     scannerDeinit();
 }
