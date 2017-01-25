@@ -2,7 +2,6 @@
 #include <stdlib.h>
 #include <stdbool.h>
 #include "shaderprg.h"
-#include "gl_core.h"
 #include "../error.h"
 
 struct ShaderPrg {
@@ -71,7 +70,9 @@ struct ShaderPrg *shaderPrgCreate(const char *vFile, const char *fFile) {
         logError("Out of memory");
     }
 
+    printf("Compiling vertex shader for %s\n", vFile);
     prg->vertex = compileShader(vFile, GL_VERTEX_SHADER);
+    printf("Compiling fragment shader for %s\n", fFile);
     prg->fragment = compileShader(fFile, GL_FRAGMENT_SHADER);
 
     prg->prgId = glCreateProgram();
@@ -95,4 +96,30 @@ void shaderPrgDestroy(struct ShaderPrg *prg) {
     glDeleteShader(prg->fragment);
     glDeleteProgram(prg->prgId);
     free(prg);
+}
+
+GLuint shaderGetId(struct ShaderPrg *prg) {
+    return prg->prgId;
+}
+
+GLint shaderGetAttr(struct ShaderPrg *prg, const char *name) {
+    GLint loc = glGetAttribLocation(prg->prgId, name);
+
+    if(loc == -1) {
+        printf("Error can't find attribute %s\n", name);
+        logError("Failed to find attribute");
+    }
+
+    return loc;
+}
+
+GLint shaderGetUniform(struct ShaderPrg *prg, const char *name) {
+    GLint loc = glGetUniformLocation(prg->prgId, name);
+
+    if(loc == -1) {
+        printf("Error can't find uniform %s\n", name);
+        logError("Failed to find uniform");
+    }
+
+    return loc;
 }

@@ -2,6 +2,7 @@
 #include <stdbool.h>
 #include <SDL2/SDL.h>
 #include "renderer/renderer.h"
+#include "renderer/map.h"
 #include "error.h"
 
 #define BITS_PER_PIXEL 8
@@ -33,7 +34,7 @@ static void gameInit() {
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 3);
 
-    window = SDL_CreateWindow("Eigen",
+    window = SDL_CreateWindow("Farmer",
                                 SDL_WINDOWPOS_CENTERED,
                                 SDL_WINDOWPOS_CENTERED,
                                 800, 600,
@@ -51,6 +52,8 @@ static void gameRun() {
     SDL_Event e;
     bool running = true;
 
+    struct Map *map = mapLoad("data/maps/test.map");
+
     while(running) {
         while(SDL_PollEvent(&e)) {
             if(e.type == SDL_QUIT) {
@@ -62,11 +65,15 @@ static void gameRun() {
 
         SDL_GL_SwapWindow(window);
     }
+
+    mapDestroy(map);
 }
 
 int main() {
     gameInit();
 
     gameRun();
+
+    renderCleanUp();
     return 0;
 }

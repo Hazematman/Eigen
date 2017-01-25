@@ -3,6 +3,7 @@
 #include <stdbool.h>
 
 void renderInit();
+void renderCleanUp();
 void renderClear(bool depth);
 
 #endif
