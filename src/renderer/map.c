@@ -1,33 +1,29 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
+#include <string.h>
 #include "util/array.h"
 #include "map.h"
 #include "chunk.h"
-
-struct Tile {
-    uint16_t type;
-    float radius;
-};
-
-struct Wall {
-    uint16_t type;
-    float lower;
-    float higher;
-};
 
 struct Header {
     char header[4];
     int32_t width;
     int32_t height;
-    int32_t numWalls;
+    int32_t numXChunk;
+    int32_t numYChunk;
 };
 
 struct Map {
+    int width;
+    int height;
+    int numXChunk;
+    int numYChunk;
     struct Array *chunks;
-    struct Wall *walls;
-    struct Tile *tiles;
 };
+
+static void loadChunk(struct Map *map, FILE *fp) {
+}
 
 static void readMapFile(struct Map *map, const char *file) {
     FILE *fp = fopen(file, "r");
@@ -42,15 +38,19 @@ static void readMapFile(struct Map *map, const char *file) {
         fclose(fp);
     }
 
-    map->walls = malloc(sizeof(struct Wall)*header.numWalls);
-    fread(map->walls, sizeof(struct Wall), header.numWalls, fp);
+    map->width = header.width;
+    map->height = header.height;
+    map->numXChunk = header.numXChunk;
+    map->numYChunk = header.numYChunk;
 
-    map->tiles = malloc(sizeof(struct Tile)*header.width*header.height);
-    fread(map->tiles, sizeof(struct Tile), header.width*header.height, fp);
+    for(int i=0; i < map->numXChunk*map->numYChunk; i++) {
+        loadChunk(map, fp);
+    }
+
 
     fclose(fp);
-}
 
+}
 
 struct Map *mapLoad(const char *file) {
     struct Map *map = malloc(sizeof(struct Map));
@@ -63,8 +63,5 @@ struct Map *mapLoad(const char *file) {
 
 void mapDestroy(struct Map *map) {
     arrayDestroy(map->chunks);
-    free(map->tiles);
-    free(map->walls);
-
     free(map);
 }

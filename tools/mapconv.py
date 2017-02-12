@@ -3,6 +3,10 @@ import sys
 import xml.etree.ElementTree as ET
 import struct
 
+CHUNK_SIZE = 16
+WALL_X = 3
+WALL_Y = 4
+
 def parseData(textData, data, width, radius):
     i = 0
     textData.replace('\n', '')
@@ -13,14 +17,18 @@ def parseData(textData, data, width, radius):
             data[i] = (val, radius)
         i += 1
 
-def parseWalls(textData, walls, lower, higher):
+def parseWalls(textData, walls, lower, higher, width):
     textData.replace('\n', '')
     elems = textData.split(',')
+    ind = -1
 
     for e in elems:
+        ind += 1
         val = int(e)
         if val != 0:
-            walls.append((val, lower, higher))
+            y = ind // width
+            x = ind % width
+            walls.append((val, lower, higher, x, y))
 
 def main():
     if(len(sys.argv) < 3):
@@ -55,25 +63,45 @@ def main():
             textData = child.find("data").text
 
             if ltype == "wall":
-                parseWalls(textData, walls, lower, higher)
+                parseWalls(textData, walls, lower, higher, width)
             elif ltype == "floor":
                 parseData(textData, data, width, radius)
 
 
-    headerfmt = "<4siii"
+    numXChunk = width // CHUNK_SIZE
+    numYChunk = height // CHUNK_SIZE
+
+    headerfmt = "<4siiii"
     datafmt = "<Hf"
     wallfmt = "<Hff"
-    headerData = struct.pack(headerfmt, "MAPF", width, height, len(walls))
+    headerData = struct.pack(headerfmt, "MAPF", width, height, numXChunk, numYChunk)
     out = open(sys.argv[2], "wb")
     out.write(headerData)
 
-    for wall in walls:
-        wallData = struct.pack(wallfmt, wall[0], wall[1], wall[2])
-        out.write(wallData)
+    for y in range(numYChunk):
+        for x in range(numXChunk):
+            chunkData = [None]*(CHUNK_SIZE*CHUNK_SIZE)
+            for yy in range(CHUNK_SIZE):
+                for xx in range(CHUNK_SIZE):
+                    chunkData[xx + yy*CHUNK_SIZE] = data[(x*CHUNK_SIZE+xx) + (y*CHUNK_SIZE+yy)*width]
 
-    for tile in data:
-        tileData = struct.pack(datafmt, tile[0], tile[1])
-        out.write(tileData)
+
+            chunkWalls = []
+            for wall in walls:
+                if wall[WALL_X] >= x*CHUNK_SIZE and wall[WALL_X] < (x+1)*CHUNK_SIZE and wall[WALL_Y] >= y*CHUNK_SIZE and wall[WALL_Y] < (y+1)*CHUNK_SIZE:
+                    chunkWalls.append(wall)
+
+            
+            wallLen = struct.pack("<i", len(chunkWalls))
+            out.write(wallLen)
+
+            for wall in chunkWalls:
+                wallData = struct.pack("<Hffhh", wall[0], wall[1], wall[2], wall[3], wall[4])
+                out.write(wallData)
+
+            for tile in chunkData:
+                tileData = struct.pack(datafmt, tile[0], tile[1])
+                out.write(tileData)
 
     out.close()
 
