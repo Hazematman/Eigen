@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdbool.h>
 #include <SDL2/SDL.h>
+#include <SDL2/SDL_image.h>
 #include "renderer/renderer.h"
 #include "renderer/map.h"
 #include "error.h"
@@ -46,6 +47,7 @@ static void gameInit() {
     SDL_GL_SetSwapInterval(1);
 
     renderInit();
+    renderSetDim(800, 600);
 }
 
 static void gameRun() {
@@ -53,7 +55,12 @@ static void gameRun() {
     bool running = true;
 
     struct Map *map = mapLoad("data/maps/test.map");
+    struct Texture *tex = renderLoadTexture("data/textures/tiles.jpg");
+    renderSetMap(map);
+    renderSetTiles(tex);
 
+    float x=0,y=0;
+    uint8_t *keys = (uint8_t*)SDL_GetKeyboardState(NULL);
     while(running) {
         while(SDL_PollEvent(&e)) {
             if(e.type == SDL_QUIT) {
@@ -61,7 +68,24 @@ static void gameRun() {
             }
         }
 
-        renderClear(false);
+        if(keys[SDL_SCANCODE_LEFT]) {
+            x -= 1;
+        }
+        if(keys[SDL_SCANCODE_RIGHT]) {
+            x += 1;
+        }
+        if(keys[SDL_SCANCODE_UP]) {
+            y -= 1;
+        }
+        if(keys[SDL_SCANCODE_DOWN]) {
+            y += 1;
+        }
+
+        renderSetPos(x,y);
+
+        renderClear(true);
+
+        renderDrawScene();
 
         SDL_GL_SwapWindow(window);
     }

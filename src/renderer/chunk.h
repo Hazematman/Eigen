@@ -3,6 +3,7 @@
 #include "gl_core.h"
 
 #define CHUNK_SIZE 16
+#define TILE_SIZE 32
 
 struct Tile {
     uint32_t type;
@@ -26,6 +27,7 @@ struct ChunkVert {
 struct Chunk {
     GLuint vbo;
     GLuint vao;
+    size_t numVerts;
 };
 
 void chunkCreate(struct Chunk *chunk, struct Tile *tiles, struct Wall *walls, size_t numWalls);

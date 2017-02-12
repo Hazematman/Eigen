@@ -4,7 +4,7 @@
 #include <string.h>
 #include "util/array.h"
 #include "map.h"
-#include "chunk.h"
+#include "map_int.h"
 
 struct Header {
     char header[4];
@@ -12,14 +12,6 @@ struct Header {
     int32_t height;
     int32_t numXChunk;
     int32_t numYChunk;
-};
-
-struct Map {
-    int width;
-    int height;
-    int numXChunk;
-    int numYChunk;
-    struct Array *chunks;
 };
 
 static void loadChunk(struct Map *map, FILE *fp) {

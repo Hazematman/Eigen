@@ -8,6 +8,6 @@ uniform sampler2D texMap;
 out vec4 outColour;
 
 void main() {
-    vec4 texColour = texture(texMap, vec2(f_vertTexCoord.x, 1-f_vertTexCoord));
+    vec4 texColour = texture(texMap, vec2(f_vertTexCoord.x, f_vertTexCoord.y));
     outColour = f_vertColour*texColour;
 }

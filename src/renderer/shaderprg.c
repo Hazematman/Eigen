@@ -19,12 +19,14 @@ static char *loadFile(const char *file) {
     fseek(f, 0, SEEK_END);
     size_t length = ftell(f);
     fseek(f, 0, SEEK_SET);
-    data = malloc(sizeof(char)*length);
+    data = malloc(sizeof(char)*(length+1));
     if(data == NULL) {
         logError("Out of memory");
     }
     fread(data, 1, length, f);
     fclose (f);
+
+    data[length] = '\0'; 
 
     return data;
 }
