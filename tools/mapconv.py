@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 import sys
 import xml.etree.ElementTree as ET
 import struct
@@ -73,7 +73,7 @@ def main():
 
     headerfmt = "<4siiii"
     datafmt = "<If"
-    headerData = struct.pack(headerfmt, "MAPF", width, height, numXChunk, numYChunk)
+    headerData = struct.pack(headerfmt, b"MAPF", width, height, numXChunk, numYChunk)
     out = open(sys.argv[2], "wb")
     out.write(headerData)
 
@@ -88,7 +88,8 @@ def main():
             chunkWalls = []
             for wall in walls:
                 if wall[WALL_X] >= x*CHUNK_SIZE and wall[WALL_X] < (x+1)*CHUNK_SIZE and wall[WALL_Y] >= y*CHUNK_SIZE and wall[WALL_Y] < (y+1)*CHUNK_SIZE:
-                    chunkWalls.append(wall)
+                    newWall = (wall[0], wall[1], wall[2], wall[3]-x*CHUNK_SIZE, wall[4]-y*CHUNK_SIZE)
+                    chunkWalls.append(newWall)
 
             
             wallLen = struct.pack("<i", len(chunkWalls))

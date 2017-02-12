@@ -38,6 +38,14 @@ void renderInit() {
         logError("OpenGL 3.3 not supported");
     }
 
+    glEnable(GL_DEPTH_TEST);
+    glDepthFunc(GL_LEQUAL);
+
+    glEnable(GL_CULL_FACE);
+    glCullFace(GL_BACK);
+
+    glFrontFace(GL_CW);
+
     /* Compile world shader program */
     worldShd.prg = shaderPrgCreate("data/shaders/world.vert", "data/shaders/world.frag");
     worldShd.vertPos = shaderGetAttr(worldShd.prg, "vertPos"); 
