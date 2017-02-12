@@ -23,6 +23,21 @@ struct Map {
 };
 
 static void loadChunk(struct Map *map, FILE *fp) {
+    struct Chunk chunk;
+    int32_t numWalls = 0;
+    fread(&numWalls, sizeof(int32_t), 1, fp);
+
+    struct Wall *walls = malloc(sizeof(struct Wall)*numWalls);
+    fread(walls, sizeof(struct Wall), numWalls, fp);
+
+    struct Tile *tiles = malloc(sizeof(struct Tile)*CHUNK_SIZE*CHUNK_SIZE);
+    fread(tiles, sizeof(struct Tile), CHUNK_SIZE*CHUNK_SIZE, fp);
+
+    chunkCreate(&chunk, tiles, walls, numWalls);
+    arrayPush(map->chunks, &chunk);
+
+    free(walls);
+    free(tiles);
 }
 
 static void readMapFile(struct Map *map, const char *file) {
@@ -36,6 +51,7 @@ static void readMapFile(struct Map *map, const char *file) {
 
         printf("Incorrect file header in file %s\n", file);
         fclose(fp);
+        return;
     }
 
     map->width = header.width;
@@ -49,6 +65,8 @@ static void readMapFile(struct Map *map, const char *file) {
 
 
     fclose(fp);
+
+    printf("done loading map file %s\n", file);
 
 }
 

@@ -10,16 +10,16 @@ the map data and it is organized as following.
 #define CHUNK_SIZE 16
 
 struct Tile {
-    uint16_t type; // The type id of the tile
+    uint32_t type; // The type id of the tile
     float radius; // The radius of this tile
 };
 
 struct Wall {
-    uint16_t type;
+    uint32_t type;
     float lower; // Lower radius
     float higher; // Upper radius
-    int16_t x; // X position of wall
-    int16_t y; // Y position of wall
+    int32_t x; // X position of wall
+    int32_t y; // Y position of wall
 };
 
 struct Chunk {

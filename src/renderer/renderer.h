@@ -6,4 +6,8 @@ void renderInit();
 void renderCleanUp();
 void renderClear(bool depth);
 
+int renderGetWrldVertPos();
+int renderGetWrldTexCoord();
+int renderGetWrldVertColour();
+
 #endif

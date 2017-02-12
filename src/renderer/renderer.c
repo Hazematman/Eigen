@@ -41,3 +41,15 @@ void renderClear(bool depth) {
         glClear(GL_COLOR_BUFFER_BIT);
     }
 }
+
+int renderGetWrldVertPos() {
+    return worldShd.vertPos;
+}
+
+int renderGetWrldTexCoord() {
+    return worldShd.vertTexCoord;
+}
+
+int renderGetWrldVertColour() {
+    return worldShd.vertColour;
+}

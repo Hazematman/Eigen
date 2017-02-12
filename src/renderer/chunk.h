@@ -5,14 +5,16 @@
 #define CHUNK_SIZE 16
 
 struct Tile {
-    uint16_t type;
+    uint32_t type;
     float radius;
 };
 
 struct Wall {
-    uint16_t type;
+    uint32_t type;
     float lower;
     float higher;
+    int32_t x;
+    int32_t y;
 };
 
 struct ChunkVert {

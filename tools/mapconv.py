@@ -72,8 +72,7 @@ def main():
     numYChunk = height // CHUNK_SIZE
 
     headerfmt = "<4siiii"
-    datafmt = "<Hf"
-    wallfmt = "<Hff"
+    datafmt = "<If"
     headerData = struct.pack(headerfmt, "MAPF", width, height, numXChunk, numYChunk)
     out = open(sys.argv[2], "wb")
     out.write(headerData)
@@ -96,7 +95,7 @@ def main():
             out.write(wallLen)
 
             for wall in chunkWalls:
-                wallData = struct.pack("<Hffhh", wall[0], wall[1], wall[2], wall[3], wall[4])
+                wallData = struct.pack("<Iffii", wall[0], wall[1], wall[2], wall[3], wall[4])
                 out.write(wallData)
 
             for tile in chunkData:
