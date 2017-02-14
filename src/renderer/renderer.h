@@ -2,8 +2,8 @@
 #define RENDERER_H
 #include <stdbool.h>
 #include "map.h"
-
-struct Texture;
+#include "texture.h"
+#include "sprite.h"
 
 void renderInit();
 void renderCleanUp();
@@ -16,6 +16,8 @@ void renderFreeTexture(struct Texture *tex);
 void renderSetMap(struct Map *map);
 void renderSetTiles(struct Texture *tex);
 void renderSetPos(float x, float y);
+void renderAddSprite(struct Sprite *spr);
+void renderRemoveSprite(struct Sprite *spr);
 void renderDrawScene();
 
 int renderGetWrldVertPos();

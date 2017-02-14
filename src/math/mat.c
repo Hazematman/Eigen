@@ -1,3 +1,4 @@
+#include <stdio.h>
 #include <string.h>
 #include "mat.h"
 
@@ -28,6 +29,13 @@ void matTrans(float *mat, float x, float y, float z) {
     mat[15] = 1.0;
 }
 
+void matScale(float *mat, float sx, float sy, float sz) {
+    matIdent(mat);
+    mat[0] = sx;
+    mat[5] = sy;
+    mat[10] = sz;
+}
+
 void matMult(float *res, float *l, float *r) {
     float left[16], right[16];
     memcpy(left, l, sizeof(float)*16);
@@ -38,5 +46,16 @@ void matMult(float *res, float *l, float *r) {
             res[j+i*4] = right[0+i*4]*left[j+0*4] + right[1+i*4]*left[j+1*4] + 
                 right[2+i*4]*left[j+2*4] + right[3+i*4]*left[j+3*4];
         }
+    }
+}
+
+
+void matPrint(float *mat, const char *name) {
+    printf("%s matrix\n", name);
+    for(int i=0; i < 4; i++) {
+        for(int j=0; j < 4; j++) {
+            printf("%f, ", mat[i+j*4]);
+        }
+        printf("\n");
     }
 }

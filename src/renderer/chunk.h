@@ -31,5 +31,6 @@ struct Chunk {
 };
 
 void chunkCreate(struct Chunk *chunk, struct Tile *tiles, struct Wall *walls, size_t numWalls);
+void chunkDestroy(struct Chunk *chunk);
 
 #endif

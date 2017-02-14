@@ -1,17 +1,14 @@
+#include <math.h>
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_image.h>
 #include "renderer.h"
 #include "gl_core.h"
 #include "shaderprg.h"
-#include "map_int.h"
+#include "render_int.h"
 #include "math/mat.h"
 #include "util/array.h"
 #include "../error.h"
-
-struct Texture {
-    GLuint id;
-    int width, height;
-};
+#define PI 3.14159
 
 struct WorldShd {
     struct ShaderPrg *prg;
@@ -20,14 +17,77 @@ struct WorldShd {
     GLint vertColour;
     GLint trans;
     GLint texMap;
+    GLint shift;
 } worldShd;
+
+struct SpriteShd {
+    struct ShaderPrg *prg;
+    GLint vertPos;
+    GLint vertTexCoord;
+    GLint trans;
+    GLint texMap;
+    GLint radius;
+    GLint yPos;
+} spriteShd;
+
+struct QuadVert {
+    float x,y;
+    float u,v;
+};
+
+static GLuint quadVbo, quadVao;
+static struct QuadVert quadVerts[] = {
+    {-0.5f, 0.0f,
+    0.0f, 0.0f,},
+
+    {-0.5f, -1.0f,
+    0.0f, 1.0f,},
+
+    {0.5f, -1.0f,
+    1.0f, 1.0f,},
+
+    {0.5f, 0.0f,
+    1.0f, 0.0f,},
+};
+static float piO4 = PI/4.0f;
 
 static struct Map *sceneMap = NULL;
 static struct Texture *tileMap = NULL;
 static int renWidth, renHeight;
-static float posX=0, posY=0;
+static float posX=0, posY=0, shift=1.1;
+
+static struct Array *sprList;
 
 static SDL_PixelFormat formatRGB, formatRGBA;
+
+static void initQuad() {
+    glGenVertexArrays(1, &quadVao);
+    glBindVertexArray(quadVao);
+
+    glGenBuffers(1, &quadVbo);
+    glBindBuffer(GL_ARRAY_BUFFER, quadVbo);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(quadVerts), quadVerts, GL_STATIC_DRAW);
+
+    glEnableVertexAttribArray(spriteShd.vertPos);
+    glEnableVertexAttribArray(spriteShd.vertTexCoord);
+
+    struct QuadVert *p = NULL;
+    glVertexAttribPointer(
+            spriteShd.vertPos,
+            2,
+            GL_FLOAT,
+            false,
+            sizeof(struct QuadVert),
+            &p->x);
+
+    glVertexAttribPointer(
+            spriteShd.vertTexCoord,
+            2,
+            GL_FLOAT,
+            false,
+            sizeof(struct QuadVert),
+            &p->u);
+}
 
 void renderInit() {
     if(ogl_LoadFunctions() == ogl_LOAD_FAILED) {
@@ -41,13 +101,13 @@ void renderInit() {
     glEnable(GL_DEPTH_TEST);
     glDepthFunc(GL_LEQUAL);
 
-    glEnable(GL_CULL_FACE);
-    glCullFace(GL_BACK);
+    //glEnable(GL_CULL_FACE);
+    //glCullFace(GL_BACK);
+    //glFrontFace(GL_CW);
 
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-    glFrontFace(GL_CW);
 
     /* Compile world shader program */
     worldShd.prg = shaderPrgCreate("data/shaders/world.vert", "data/shaders/world.frag");
@@ -56,6 +116,19 @@ void renderInit() {
     worldShd.vertColour = shaderGetAttr(worldShd.prg, "vertColour");
     worldShd.trans = shaderGetUniform(worldShd.prg, "trans");
     worldShd.texMap = shaderGetUniform(worldShd.prg, "texMap");
+    worldShd.shift = shaderGetUniform(worldShd.prg, "shift");
+
+    /* Compile sprite shader program */
+    spriteShd.prg = shaderPrgCreate("data/shaders/sprite.vert", "data/shaders/sprite.frag");
+    spriteShd.vertPos = shaderGetAttr(spriteShd.prg, "vertPos");
+    spriteShd.vertTexCoord = shaderGetAttr(spriteShd.prg, "vertTexCoord");
+    spriteShd.trans = shaderGetUniform(spriteShd.prg, "trans");
+    spriteShd.texMap = shaderGetUniform(spriteShd.prg, "texMap");
+    spriteShd.radius = shaderGetUniform(spriteShd.prg, "radius");
+    spriteShd.yPos = shaderGetUniform(spriteShd.prg, "yPos");
+
+    /* Initalize quad data */
+    initQuad();
 
     /* Initalize pixel format types */
     formatRGB.format = SDL_PIXELFORMAT_RGB888;
@@ -75,6 +148,9 @@ void renderInit() {
     formatRGBA.Gmask = 0x0000FF00;
     formatRGBA.Bmask = 0x00FF0000;
     formatRGBA.Amask = 0xFF000000;
+
+    /* Create array of sprites */
+    sprList = arrayCreate(sizeof(struct Sprite*));
 }
 
 void renderCleanUp() {
@@ -167,17 +243,48 @@ void renderSetPos(float x, float y) {
     posY = y;
 }
 
+void renderAddSprite(struct Sprite *spr) {
+    for(size_t i=0; i < arrayLength(sprList); i++) {
+        struct Sprite *s = *(struct Sprite**)arrayGet(sprList, i);
+        if(spr == s) {
+            printf("Attempting to add sprite already in scene\n");
+            return;
+        }
+    }
+
+    arrayPush(sprList, &spr);
+}
+
+void renderRemoveSprite(struct Sprite *spr) {
+    int index = -1;
+    for(size_t i=0; i < arrayLength(sprList); i++) {
+        struct Sprite *s = *(struct Sprite**)arrayGet(sprList, i);
+        if(spr == s) {
+            index = i;
+        }
+    }
+
+    if(index == -1) {
+        printf("Could not find sprite to remove!\n");
+        return;
+    }
+
+    arrayDelete(sprList, index);
+}
+
 void renderDrawScene() {
     float ortho[16];
     matOrtho(ortho, 0, renWidth, 0, renHeight, -1.0, 1.0);
 
+    /* Draw the map */
     glUseProgram(shaderGetId(worldShd.prg));
-
     if(sceneMap) {
         if(tileMap) {
             glBindTexture(GL_TEXTURE_2D, tileMap->id);
             glUniform1i(worldShd.texMap, 0);
         }
+
+        glUniform1f(worldShd.shift, shift);
 
 
         int iPosX = posX, iPosY = posY;
@@ -199,5 +306,33 @@ void renderDrawScene() {
                 }
             }
         }
+    }
+
+    /* Draw all relevant sprites in the scene */
+    glUseProgram(shaderGetId(spriteShd.prg));
+    for(size_t i=0; i < arrayLength(sprList); i++) {
+        float trans[16], scale[16], out[16];
+        struct Sprite *spr = *(struct Sprite**)arrayGet(sprList, i);
+        float dY = spr->y - posY;
+        float yPos = (-2.0/renHeight)*dY + 1.0;
+        float newY = spr->radius*cos(-piO4*yPos + piO4) - shift;
+
+        newY = -renHeight*(newY - 1.0f)/2.0f;
+
+        matScale(scale, spr->tex->width, spr->tex->height, 1.0f);
+        matTrans(trans, spr->x-posX, newY, 0);
+        matMult(out, trans, scale);
+        matMult(out, ortho, out);
+
+        glUniformMatrix4fv(spriteShd.trans, 1, false, out);
+
+        glUniform1f(spriteShd.radius, spr->radius);
+        glUniform1f(spriteShd.yPos, yPos);
+
+        glBindTexture(GL_TEXTURE_2D ,spr->tex->id);
+        glUniform1i(spriteShd.texMap, 0);
+
+        glBindVertexArray(quadVao);
+        glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
     }
 }

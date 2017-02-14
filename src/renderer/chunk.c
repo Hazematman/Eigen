@@ -161,3 +161,8 @@ void chunkCreate(struct Chunk *chunk, struct Tile *tiles, struct Wall *walls, si
 
     arrayDestroy(vertData);
 }
+
+void chunkDestroy(struct Chunk *chunk) {
+    glDeleteVertexArrays(1, &chunk->vao);
+    glDeleteBuffers(1, &chunk->vbo);
+}

@@ -4,7 +4,7 @@
 #include <string.h>
 #include "util/array.h"
 #include "map.h"
-#include "map_int.h"
+#include "render_int.h"
 
 struct Header {
     char header[4];
@@ -72,6 +72,10 @@ struct Map *mapLoad(const char *file) {
 }
 
 void mapDestroy(struct Map *map) {
+    for(size_t i=0; i < arrayLength(map->chunks); i++) {
+        struct Chunk *c = (struct Chunk*)arrayGet(map->chunks, i);
+        chunkDestroy(c);
+    }
     arrayDestroy(map->chunks);
     free(map);
 }

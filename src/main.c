@@ -56,8 +56,17 @@ static void gameRun() {
 
     struct Map *map = mapLoad("data/maps/test.map");
     struct Texture *tex = renderLoadTexture("data/textures/tiles.jpg");
+    struct Texture *tree = renderLoadTexture("data/textures/tree.png");
+    struct Texture *guy = renderLoadTexture("data/textures/guy.png");
     renderSetMap(map);
     renderSetTiles(tex);
+
+    struct Sprite *treeSpr = spriteCreate(tree);
+    struct Sprite *guySpr = spriteCreate(guy);
+    renderAddSprite(treeSpr);
+    renderAddSprite(guySpr);
+
+    spriteSetPos(treeSpr, 128, 512, 1.6);
 
     float x=0,y=0;
     uint8_t *keys = (uint8_t*)SDL_GetKeyboardState(NULL);
@@ -80,6 +89,8 @@ static void gameRun() {
         if(keys[SDL_SCANCODE_DOWN]) {
             y += 1;
         }
+
+        spriteSetPos(guySpr, x+400, y+512, 1.6);
 
         renderSetPos(x,y);
 
