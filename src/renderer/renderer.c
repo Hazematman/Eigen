@@ -8,13 +8,13 @@
 #include "math/mat.h"
 #include "util/array.h"
 #include "../error.h"
-#define PI 3.14159
 
 struct WorldShd {
     struct ShaderPrg *prg;
     GLint vertPos;
     GLint vertTexCoord;
     GLint vertColour;
+    GLint proj;
     GLint trans;
     GLint texMap;
     GLint shift;
@@ -36,20 +36,23 @@ struct QuadVert {
 };
 
 static GLuint quadVbo, quadVao;
-static struct QuadVert quadVerts[] = {
-    {-0.5f, 0.0f,
-    0.0f, 0.0f,},
+static struct ChunkVert quadVerts[] = {
+    {-0.5f, 0.0f, 0.1f,
+    0.0f, 0.0f,
+    1.0f, 1.0f, 1.0f, 1.0f},
 
-    {-0.5f, -1.0f,
-    0.0f, 1.0f,},
+    {-0.5f, -0.0f, 0.0f,
+    0.0f, 1.0f,
+    1.0f, 1.0f, 1.0f, 1.0f},
 
-    {0.5f, -1.0f,
-    1.0f, 1.0f,},
+    {0.5f, -0.0f, 0.0f,
+    1.0f, 1.0f,
+    1.0f, 1.0f, 1.0f, 1.0f},
 
-    {0.5f, 0.0f,
-    1.0f, 0.0f,},
+    {0.5f, 0.0f, 0.1f,
+    1.0f, 0.0f,
+    1.0f, 1.0f, 1.0f, 1.0f},
 };
-static float piO4 = PI/4.0f;
 
 static struct Map *sceneMap = NULL;
 static struct Texture *tileMap = NULL;
@@ -68,25 +71,34 @@ static void initQuad() {
     glBindBuffer(GL_ARRAY_BUFFER, quadVbo);
     glBufferData(GL_ARRAY_BUFFER, sizeof(quadVerts), quadVerts, GL_STATIC_DRAW);
 
-    glEnableVertexAttribArray(spriteShd.vertPos);
-    glEnableVertexAttribArray(spriteShd.vertTexCoord);
+    glEnableVertexAttribArray(worldShd.vertPos);
+    glEnableVertexAttribArray(worldShd.vertTexCoord);
+    glEnableVertexAttribArray(worldShd.vertColour);
 
-    struct QuadVert *p = NULL;
+    struct ChunkVert *p = NULL;
     glVertexAttribPointer(
-            spriteShd.vertPos,
-            2,
+            worldShd.vertPos,
+            3,
             GL_FLOAT,
             false,
-            sizeof(struct QuadVert),
+            sizeof(struct ChunkVert),
             &p->x);
 
     glVertexAttribPointer(
-            spriteShd.vertTexCoord,
+            worldShd.vertTexCoord,
             2,
             GL_FLOAT,
             false,
-            sizeof(struct QuadVert),
+            sizeof(struct ChunkVert),
             &p->u);
+
+    glVertexAttribPointer(
+            worldShd.vertColour,
+            4,
+            GL_FLOAT,
+            false,
+            sizeof(struct ChunkVert),
+            &p->r);
 }
 
 void renderInit() {
@@ -114,6 +126,7 @@ void renderInit() {
     worldShd.vertPos = shaderGetAttr(worldShd.prg, "vertPos"); 
     worldShd.vertTexCoord = shaderGetAttr(worldShd.prg, "vertTexCoord");
     worldShd.vertColour = shaderGetAttr(worldShd.prg, "vertColour");
+    worldShd.proj = shaderGetUniform(worldShd.prg, "proj");
     worldShd.trans = shaderGetUniform(worldShd.prg, "trans");
     worldShd.texMap = shaderGetUniform(worldShd.prg, "texMap");
     worldShd.shift = shaderGetUniform(worldShd.prg, "shift");
@@ -278,14 +291,13 @@ void renderDrawScene() {
 
     /* Draw the map */
     glUseProgram(shaderGetId(worldShd.prg));
+    glUniformMatrix4fv(worldShd.proj, 1, false, ortho);
+    glUniform1f(worldShd.shift, shift);
     if(sceneMap) {
         if(tileMap) {
             glBindTexture(GL_TEXTURE_2D, tileMap->id);
             glUniform1i(worldShd.texMap, 0);
         }
-
-        glUniform1f(worldShd.shift, shift);
-
 
         int iPosX = posX, iPosY = posY;
         int curXChunk = iPosX / (CHUNK_SIZE*TILE_SIZE);
@@ -294,12 +306,11 @@ void renderDrawScene() {
         for(int y=curYChunk-1; y <= curYChunk+2; y++) {
             for(int x=curXChunk-1; x <= curXChunk+2; x++) {
                 if(x >= 0 && x < sceneMap->numXChunk && y >=0 && y < sceneMap->numYChunk) {
-                    float trans[16], out[16];
+                    float trans[16];
                     struct Chunk *c = (struct Chunk*)arrayGet(sceneMap->chunks, x + y*sceneMap->numXChunk);
                     matTrans(trans, x*CHUNK_SIZE*TILE_SIZE-posX, y*CHUNK_SIZE*TILE_SIZE-posY, 0); 
-                    matMult(out, ortho, trans);
 
-                    glUniformMatrix4fv(worldShd.trans, 1, false, out);
+                    glUniformMatrix4fv(worldShd.trans, 1, false, trans);
 
                     glBindVertexArray(c->vao);
                     glDrawArrays(GL_TRIANGLES, 0, c->numVerts);
@@ -309,28 +320,17 @@ void renderDrawScene() {
     }
 
     /* Draw all relevant sprites in the scene */
-    glUseProgram(shaderGetId(spriteShd.prg));
     for(size_t i=0; i < arrayLength(sprList); i++) {
         float trans[16], scale[16], out[16];
         struct Sprite *spr = *(struct Sprite**)arrayGet(sprList, i);
-        float dY = spr->y - posY;
-        float yPos = (-2.0/renHeight)*dY + 1.0;
-        float newY = spr->radius*cos(-piO4*yPos + piO4) - shift;
-
-        newY = -renHeight*(newY - 1.0f)/2.0f;
-
-        matScale(scale, spr->tex->width, spr->tex->height, 1.0f);
-        matTrans(trans, spr->x-posX, newY, 0);
+        matScale(scale, spr->tex->width, spr->tex->height, spr->tex->height/32.0f);
+        matTrans(trans, spr->x-posX, spr->y-posY, spr->radius);
         matMult(out, trans, scale);
-        matMult(out, ortho, out);
 
-        glUniformMatrix4fv(spriteShd.trans, 1, false, out);
-
-        glUniform1f(spriteShd.radius, spr->radius);
-        glUniform1f(spriteShd.yPos, yPos);
+        glUniformMatrix4fv(worldShd.trans, 1, false, out);
 
         glBindTexture(GL_TEXTURE_2D ,spr->tex->id);
-        glUniform1i(spriteShd.texMap, 0);
+        glUniform1i(worldShd.texMap, 0);
 
         glBindVertexArray(quadVao);
         glDrawArrays(GL_TRIANGLE_FAN, 0, 4);

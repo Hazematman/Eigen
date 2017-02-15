@@ -90,7 +90,7 @@ static void gameRun() {
             y += 1;
         }
 
-        spriteSetPos(guySpr, x+400, y+512, 1.6);
+        spriteSetPos(guySpr, x+400, y+300, 1.6);
 
         renderSetPos(x,y);
 

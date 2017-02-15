@@ -91,7 +91,7 @@ void chunkCreate(struct Chunk *chunk, struct Tile *tiles, struct Wall *walls, si
         p2.z = wall->higher;
 
         p3.x = wall->x*TILE_SIZE+TILE_SIZE;
-        p3.y = wall->y*TILE_SIZE+TILE_SIZE;
+        p3.y = wall->y*TILE_SIZE;
         p3.z = wall->lower;
 
         p4.x = wall->x*TILE_SIZE;
@@ -99,11 +99,11 @@ void chunkCreate(struct Chunk *chunk, struct Tile *tiles, struct Wall *walls, si
         p4.z = wall->higher;
 
         p5.x = wall->x*TILE_SIZE+TILE_SIZE;
-        p5.y = wall->y*TILE_SIZE+TILE_SIZE;
+        p5.y = wall->y*TILE_SIZE;
         p5.z = wall->lower;
 
         p6.x = wall->x*TILE_SIZE;
-        p6.y = wall->y*TILE_SIZE+TILE_SIZE;
+        p6.y = wall->y*TILE_SIZE;
         p6.z = wall->lower;
 
         getTexLoc(wall->type, &p1, &p2, &p3, &p4, &p5, &p6);
