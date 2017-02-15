@@ -20,21 +20,6 @@ struct WorldShd {
     GLint shift;
 } worldShd;
 
-struct SpriteShd {
-    struct ShaderPrg *prg;
-    GLint vertPos;
-    GLint vertTexCoord;
-    GLint trans;
-    GLint texMap;
-    GLint radius;
-    GLint yPos;
-} spriteShd;
-
-struct QuadVert {
-    float x,y;
-    float u,v;
-};
-
 static GLuint quadVbo, quadVao;
 static struct ChunkVert quadVerts[] = {
     {-0.5f, 0.0f, 0.1f,
@@ -130,15 +115,6 @@ void renderInit() {
     worldShd.trans = shaderGetUniform(worldShd.prg, "trans");
     worldShd.texMap = shaderGetUniform(worldShd.prg, "texMap");
     worldShd.shift = shaderGetUniform(worldShd.prg, "shift");
-
-    /* Compile sprite shader program */
-    spriteShd.prg = shaderPrgCreate("data/shaders/sprite.vert", "data/shaders/sprite.frag");
-    spriteShd.vertPos = shaderGetAttr(spriteShd.prg, "vertPos");
-    spriteShd.vertTexCoord = shaderGetAttr(spriteShd.prg, "vertTexCoord");
-    spriteShd.trans = shaderGetUniform(spriteShd.prg, "trans");
-    spriteShd.texMap = shaderGetUniform(spriteShd.prg, "texMap");
-    spriteShd.radius = shaderGetUniform(spriteShd.prg, "radius");
-    spriteShd.yPos = shaderGetUniform(spriteShd.prg, "yPos");
 
     /* Initalize quad data */
     initQuad();
