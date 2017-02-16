@@ -15,7 +15,7 @@ struct Array;
 struct Array *arrayCreate(size_t eSize);
 void arrayDestroy(struct Array *ary);
 size_t arrayLength(struct Array *ary);
-void arrayPush(struct Array *ary, void *elem);
+void *arrayPush(struct Array *ary, void *elem);
 void arrayPop(struct Array *ary, void *store);
 void arrayDelete(struct Array *ary, size_t index);
 void *arrayGet(struct Array *ary, size_t index);

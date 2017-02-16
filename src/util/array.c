@@ -40,7 +40,8 @@ size_t arrayLength(struct Array *ary) {
     return ary->length;
 }
 
-void arrayPush(struct Array *ary, void *elem) {
+void *arrayPush(struct Array *ary, void *elem) {
+    void *data = NULL;
     if(ary->length == ary->cap) {
         ary->cap *= 2;
         ary->data = realloc(ary->data, sizeof(uint8_t)*ary->elemSize*ary->cap);
@@ -49,8 +50,11 @@ void arrayPush(struct Array *ary, void *elem) {
         }
     }
 
+    data = &ary->data[ary->elemSize*ary->length];
     memcpy(&ary->data[ary->elemSize*ary->length], elem, ary->elemSize);
     ary->length++;
+
+    return data;
 }
 
 void arrayPop(struct Array *ary, void *store) {
