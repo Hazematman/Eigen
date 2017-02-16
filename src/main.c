@@ -38,7 +38,6 @@ static void clientHandle() {
                 type = (PacketType*)event.packet->data;
                 if(*type == PACKET_LOAD_MAP) {
                     struct PacketLoadMap *p = (struct PacketLoadMap*)event.packet->data;
-                    printf("Attempting to load file %s\n", p->filename);
                     map = mapLoad(p->filename);
                     renderSetMap(map);
                 } else if(*type == PACKET_LOAD_PLAYER) {
