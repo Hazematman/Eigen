@@ -7,6 +7,7 @@
 #include "render_int.h"
 #include "math/mat.h"
 #include "util/array.h"
+#include "util/util.h"
 #include "../error.h"
 
 struct WorldShd {
@@ -19,6 +20,35 @@ struct WorldShd {
     GLint texMap;
     GLint shift;
 } worldShd;
+
+struct SpriteShd {
+    struct ShaderPrg *prg;
+    GLint vertPos;
+    GLint vertTexCoord;
+    GLint trans;
+    GLint texMap;
+    GLint radius;
+    GLint yPos;
+} spriteShd;
+
+static GLuint quadBillVbo, quadBillVao;
+static struct ChunkVert quadBillVerts[] = {
+    {-0.5f, 0.0f, 0.1f,
+    0.0f, 0.0f,
+    1.0f, 1.0f, 1.0f, 1.0f},
+
+    {-0.5f, -1.0f, 0.0f,
+    0.0f, 1.0f,
+    1.0f, 1.0f, 1.0f, 1.0f},
+
+    {0.5f, -1.0f, 0.0f,
+    1.0f, 1.0f,
+    1.0f, 1.0f, 1.0f, 1.0f},
+
+    {0.5f, 0.0f, 0.1f,
+    1.0f, 0.0f,
+    1.0f, 1.0f, 1.0f, 1.0f},
+};
 
 static GLuint quadVbo, quadVao;
 static struct ChunkVert quadVerts[] = {
@@ -39,16 +69,20 @@ static struct ChunkVert quadVerts[] = {
     1.0f, 1.0f, 1.0f, 1.0f},
 };
 
+static float piO4 = PI/4.0f;
+
 static struct Map *sceneMap = NULL;
 static struct Texture *tileMap = NULL;
 static int renWidth, renHeight;
-static float posX=0, posY=0, shift=1.1;
+static float posX=0, posY=0, shift=1.6;
 
 static struct Array *sprList;
+static struct Array *bbList;
 
 static SDL_PixelFormat formatRGB, formatRGBA;
 
 static void initQuad() {
+    /* Creating sprite geometry */
     glGenVertexArrays(1, &quadVao);
     glBindVertexArray(quadVao);
 
@@ -84,6 +118,33 @@ static void initQuad() {
             false,
             sizeof(struct ChunkVert),
             &p->r);
+
+    /* Creating billboard geometry */
+    glGenVertexArrays(1, &quadBillVao);
+    glBindVertexArray(quadBillVao);
+
+    glGenBuffers(1, &quadBillVbo);
+    glBindBuffer(GL_ARRAY_BUFFER, quadBillVbo);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(quadBillVerts), quadBillVerts, GL_STATIC_DRAW);
+
+    glEnableVertexAttribArray(spriteShd.vertPos);
+    glEnableVertexAttribArray(spriteShd.vertTexCoord);
+
+    glVertexAttribPointer(
+            spriteShd.vertPos,
+            3,
+            GL_FLOAT,
+            false,
+            sizeof(struct ChunkVert),
+            &p->x);
+
+    glVertexAttribPointer(
+            spriteShd.vertTexCoord,
+            2,
+            GL_FLOAT,
+            false,
+            sizeof(struct ChunkVert),
+            &p->u);
 }
 
 void renderInit() {
@@ -116,6 +177,16 @@ void renderInit() {
     worldShd.texMap = shaderGetUniform(worldShd.prg, "texMap");
     worldShd.shift = shaderGetUniform(worldShd.prg, "shift");
 
+    
+    /* Compile sprite shader program */
+    spriteShd.prg = shaderPrgCreate("data/shaders/billboard.vert", "data/shaders/billboard.frag");
+    spriteShd.vertPos = shaderGetAttr(spriteShd.prg, "vertPos");
+    spriteShd.vertTexCoord = shaderGetAttr(spriteShd.prg, "vertTexCoord");
+    spriteShd.trans = shaderGetUniform(spriteShd.prg, "trans");
+    spriteShd.texMap = shaderGetUniform(spriteShd.prg, "texMap");
+    spriteShd.radius = shaderGetUniform(spriteShd.prg, "radius");
+    spriteShd.yPos = shaderGetUniform(spriteShd.prg, "yPos");
+
     /* Initalize quad data */
     initQuad();
 
@@ -138,8 +209,9 @@ void renderInit() {
     formatRGBA.Bmask = 0x00FF0000;
     formatRGBA.Amask = 0xFF000000;
 
-    /* Create array of sprites */
+    /* Create array of sprites and billboard sprites */
     sprList = arrayCreate(sizeof(struct Sprite*));
+    bbList = arrayCreate(sizeof(struct Billboard*));
 }
 
 void renderCleanUp() {
@@ -261,6 +333,35 @@ void renderRemoveSprite(struct Sprite *spr) {
     arrayDelete(sprList, index);
 }
 
+void renderAddBillboard(struct Billboard *bb) {
+    for(size_t i=0; i < arrayLength(bbList); i++) {
+        struct Billboard *b = *(struct Billboard**)arrayGet(bbList, i);
+        if(bb == b) {
+            printf("Attempting to add sprite already in scene\n");
+            return;
+        }
+    }
+
+    arrayPush(bbList, &bb);
+}
+
+void renderRemoveBillboard(struct Billboard *bb) {
+    int index = -1;
+    for(size_t i=0; i < arrayLength(bbList); i++) {
+        struct Billboard *b = *(struct Billboard**)arrayGet(bbList, i);
+        if(bb == b) {
+            index = i;
+        }
+    }
+
+    if(index == -1) {
+        printf("Could not find sprite to remove!\n");
+        return;
+    }
+
+    arrayDelete(bbList, index);
+}
+
 void renderDrawScene() {
     float ortho[16];
     matOrtho(ortho, 0, renWidth, 0, renHeight, -1.0, 1.0);
@@ -311,4 +412,32 @@ void renderDrawScene() {
         glBindVertexArray(quadVao);
         glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
     }
+
+    /* Draw all relevant billboard sprites in the scene */
+    glUseProgram(shaderGetId(spriteShd.prg));
+    for(size_t i=0; i < arrayLength(bbList); i++) {
+        float trans[16], scale[16], out[16];
+        struct Billboard *bb = *(struct Billboard**)arrayGet(bbList, i);
+        float dY = bb->y - posY;
+        float yPos = (-2.0/renHeight)*dY + 1.0;
+        float newY = bb->radius*cos(-piO4*yPos + piO4) - shift;
+
+        newY = -renHeight*(newY - 1.0f)/2.0f;
+
+        matScale(scale, bb->tex->width, bb->tex->height, 1.0f);
+        matTrans(trans, bb->x-posX, newY, 0);
+        matMult(out, trans, scale);
+        matMult(out, ortho, out);
+
+        glUniformMatrix4fv(spriteShd.trans, 1, false, out);
+
+        glUniform1f(spriteShd.radius, bb->radius);
+        glUniform1f(spriteShd.yPos, yPos);
+
+        glBindTexture(GL_TEXTURE_2D , bb->tex->id);
+        glUniform1i(spriteShd.texMap, 0);
+
+        glBindVertexArray(quadBillVao);
+        glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
+}
 }

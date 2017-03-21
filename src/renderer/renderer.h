@@ -4,6 +4,7 @@
 #include "map.h"
 #include "texture.h"
 #include "sprite.h"
+#include "billboard.h"
 
 void renderInit();
 void renderCleanUp();
@@ -18,6 +19,8 @@ void renderSetTiles(struct Texture *tex);
 void renderSetPos(float x, float y);
 void renderAddSprite(struct Sprite *spr);
 void renderRemoveSprite(struct Sprite *spr);
+void renderAddBillboard(struct Billboard *bb);
+void renderRemoveBillboard(struct Billboard *bb);
 void renderDrawScene();
 
 int renderGetWrldVertPos();

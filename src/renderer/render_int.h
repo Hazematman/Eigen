@@ -24,4 +24,9 @@ struct Sprite {
     float x,y,radius;
 };
 
+struct Billboard {
+    struct Texture *tex; 
+    float x,y,radius;
+};
+
 #endif

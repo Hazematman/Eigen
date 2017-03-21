@@ -95,6 +95,16 @@ static void gameRun() {
     bool running = true;
 
 
+    map = mapLoad("./data/maps/test.map");
+    renderSetMap(map);
+
+    struct Texture *guyTex = renderLoadTexture("./data/textures/guy.png");
+    struct Texture *treeTex = renderLoadTexture("./data/textures/tree.png");
+    struct Sprite *guy = spriteCreate(guyTex);
+    struct Sprite *tree = spriteCreate(treeTex);
+    renderAddSprite(guy);
+    renderAddSprite(tree);
+
     float x=0,y=0;
     uint8_t *keys = (uint8_t*)SDL_GetKeyboardState(NULL);
     while(running) {
@@ -122,6 +132,8 @@ static void gameRun() {
         }
 
         renderSetPos(x,y);
+        spriteSetPos(guy, x+350,y+300, 1.6);
+        spriteSetPos(tree,0, 0, 1.6);
 
         renderClear(true);
 
@@ -141,6 +153,7 @@ int main(int argc, char *argv[]) {
 
     gameInit();
 
+/*
     if(runServer) {
         serverThread = SDL_CreateThread(serverRun, "ServerThread", (void*)NULL); 
     }
@@ -162,7 +175,7 @@ int main(int argc, char *argv[]) {
         printf("[CLIENT] Failed to connect to server\n");
         return -1;
     }
-    
+*/ 
     
 
     gameRun();
