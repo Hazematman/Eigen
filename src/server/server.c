@@ -72,8 +72,9 @@ static void sendInit(struct ServerState *state, struct Peer *peer) {
     sendMapLoad(state, peer, "./data/maps/test.map");
 }
 
-static void handlePacket(struct ServerState *state, uint8_t *data, size_t length) {
+static void handlePacket(struct ServerState *state, ENetPeer *peer, uint8_t *data, size_t length) {
     UNUSED(state);
+    UNUSED(peer);
     UNUSED(data);
     UNUSED(length);
 }
@@ -121,7 +122,7 @@ int serverRun(void *ptr) {
                     }
                     break;
                 case ENET_EVENT_TYPE_RECEIVE:
-                    handlePacket(&state, event.packet->data, event.packet->dataLength);
+                    handlePacket(&state, event.peer, event.packet->data, event.packet->dataLength);
                     enet_packet_destroy(event.packet);
                     break;
                 case ENET_EVENT_TYPE_NONE:
