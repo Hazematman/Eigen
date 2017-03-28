@@ -19,6 +19,9 @@ struct Transition {
     size_t state;
 };
 
+
+static struct Token startRule = {.type=MAX_TOKEN_VAL, .str=NULL};
+
 static struct Transition *transition(struct Cfg *cfg, size_t state, enum TokenType token) {
     struct Array *s = *(struct Array **)arrayGet(cfg->states, state);
 
@@ -69,9 +72,10 @@ void cfgAddRule(struct Cfg *cfg, size_t symbol, size_t ruleLen) {
     arrayPush(cfg->rules, &r);
 }
 
-void cfgParse(struct Cfg *cfg, struct Array *tokens) {
+struct TreeNode *cfgParse(struct Cfg *cfg, struct Array *tokens) {
     struct Array *inputStack = arrayCreate(sizeof(struct Token));
     struct Array *stateStack = arrayCreate(sizeof(size_t));
+    struct Array *tree = arrayCreate(sizeof(struct TreeNode*));
     size_t state = 0;
     
     arrayPush(stateStack, &state);
@@ -82,30 +86,57 @@ void cfgParse(struct Cfg *cfg, struct Array *tokens) {
         struct Transition *newState = transition(cfg, topState, t->type);
         if(newState == NULL) {
             logError("Reached a null state");
-            return;
+            return NULL;
         } else if(newState->type == REDUCE) {
             i--;
             struct Rule *rule = (struct Rule *)arrayGet(cfg->rules, newState->state);
 
+            struct Token tRule;
+            tRule.type = MAX_TOKEN_VAL + rule->symbol;
+            tRule.str = NULL;
+            struct TreeNode *node = nodeCreate(&tRule, sizeof(struct Token));
             for(size_t i=0; i < rule->len; i++) {
+                struct TreeNode *back = NULL;
+                arrayPop(tree, &back);
+                nodeAddChild(node, back);
+
                 arrayPop(inputStack, NULL);
                 arrayPop(stateStack, NULL);
             }
 
+            arrayPush(tree, &node);
 
             topState = *(size_t *)arrayGet(stateStack, arrayLength(stateStack) - 1);
             newState = transition(cfg, topState, rule->symbol);
             if(newState == NULL) {
                 logError("Reached a null state");
-                return;
+                return NULL;
             }
         } else {
+            /* Create Token TreeNode for terminal and add to tree */
+            struct TreeNode *node = nodeCreate(t, sizeof(struct Token));
+            arrayPush(tree, &node);
+
             arrayPush(inputStack, &t);
             arrayPush(stateStack, &newState->state);
         }
     }
 
+    struct TreeNode *back = NULL;
+    struct TreeNode *root = nodeCreate(&startRule, sizeof(struct Token));
+
+    arrayPop(tree, &back);
+    nodeAddChild(root, back);
+
+    arrayPop(tree, &back);
+    nodeAddChild(root, back);
+
+    arrayPop(tree, &back);
+    nodeAddChild(root, back);
 
     arrayDestroy(inputStack);
     arrayDestroy(stateStack);
+    arrayDestroy(tree);
+
+    return root;
 }

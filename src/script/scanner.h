@@ -38,8 +38,12 @@ enum TokenType {
     TOKEN_ID,
     TOKEN_NUMBER,
     TOKEN_STRING,
-
     TOKEN_INVALID,
+
+    TOKEN_BOF,
+    TOKEN_EOF,
+
+    MAX_TOKEN_VAL,
 };
 
 struct Token {
