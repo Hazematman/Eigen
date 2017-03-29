@@ -333,6 +333,16 @@ struct Array *scannerParse(char *text) {
     struct Dfa *state = states[STATE_start];
     size_t lineLen = strlen(text) + 1;
     size_t start = 0;
+    /* This is an ugly hack as string need to be heap allocated for tokens */
+    /* TODO switch to string allocator so strings are just indexes */
+    char *cBOF = malloc(4);
+    char *cEOF = malloc(4);
+    strcpy(cBOF, "BOF");
+    strcpy(cEOF, "EOF");
+    /**********************/
+    struct Token tBof = {TOKEN_BOF, cBOF};
+    struct Token tEof = {TOKEN_EOF, cEOF};
+    arrayPush(out, &tBof);
     for(size_t i=0; i < lineLen; i++) {
         struct Dfa *newState = dfaTransition(state, &text[i]);
         if(newState == NULL) {
@@ -354,6 +364,7 @@ struct Array *scannerParse(char *text) {
         }
     }
 
+    arrayPush(out, &tEof);
 
     return out;
 }

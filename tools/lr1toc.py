@@ -53,7 +53,12 @@ def genCFile(outFile, numStates, rules, trans, tokens, nonTerms):
     ruleStr = ""
     for i in range(len(rules)):
         rule = rules[i]
-        ruleStr += "    cfgAddRule(lr1Cfg, {}, {});\n".format(i, len(rule)-1)
+        val = "MAX_TOKEN_VAL + RULE_{}".format(rule[0].upper())
+        l = len(rule)-1
+        for i in range(1,len(rule)):
+            if rule[i] == "e":
+                l -= 1
+        ruleStr += "    cfgAddRule(lr1Cfg, {}, {});\n".format(val, l)
 
     # Create string for all the transitions
     transStr = ""

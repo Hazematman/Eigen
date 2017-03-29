@@ -1,3 +1,4 @@
+#include <stdio.h>
 #include <stdlib.h>
 #include "util/dfa.h"
 #include "cfg.h"
@@ -27,7 +28,7 @@ static struct Transition *transition(struct Cfg *cfg, size_t state, enum TokenTy
 
     /* Find transition in transition array */
     for(size_t i=0; i < arrayLength(s); i++) {
-        struct Transition *t = *(struct Transition **)arrayGet(s, i); 
+        struct Transition *t = (struct Transition *)arrayGet(s, i); 
         if(t->token == token) {
             return t;
         }
@@ -61,7 +62,7 @@ void cfgDestroy(struct Cfg *cfg) {
 }
 
 void cfgAddTransition(struct Cfg *cfg, size_t state, enum TokenType token, enum StateType type, size_t stateInd) {
-    struct Array *s = arrayGet(cfg->states, state);
+    struct Array *s = *(struct Array **)arrayGet(cfg->states, state);
     struct Transition t = {token, type, stateInd};
 
     arrayPush(s, &t);
@@ -92,7 +93,7 @@ struct TreeNode *cfgParse(struct Cfg *cfg, struct Array *tokens) {
             struct Rule *rule = (struct Rule *)arrayGet(cfg->rules, newState->state);
 
             struct Token tRule;
-            tRule.type = MAX_TOKEN_VAL + rule->symbol;
+            tRule.type = rule->symbol;
             tRule.str = NULL;
             struct TreeNode *node = nodeCreate(&tRule, sizeof(struct Token));
             for(size_t i=0; i < rule->len; i++) {
@@ -112,12 +113,15 @@ struct TreeNode *cfgParse(struct Cfg *cfg, struct Array *tokens) {
                 logError("Reached a null state");
                 return NULL;
             }
+
+            arrayPush(inputStack, t);
+            arrayPush(stateStack, &newState->state);
         } else {
             /* Create Token TreeNode for terminal and add to tree */
             struct TreeNode *node = nodeCreate(t, sizeof(struct Token));
             arrayPush(tree, &node);
 
-            arrayPush(inputStack, &t);
+            arrayPush(inputStack, t);
             arrayPush(stateStack, &newState->state);
         }
     }

@@ -4,6 +4,7 @@
 #include "utilTest/dfaTest.h"
 #include "utilTest/ntreeTest.h"
 #include "scriptTest/scannerTest.h"
+#include "scriptTest/parserTest.h"
 #include "error.h"
 #include "tassert.h"
 
@@ -32,6 +33,9 @@ int main() {
 
     printf("Running scanner Tests\n");
     scannerTest();
+
+    printf("Running parser Tests\n");
+    parserTest();
 
     printf("Tests completed succefully!\n");
     return 0;
