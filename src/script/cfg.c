@@ -12,6 +12,7 @@ struct Cfg {
 struct Rule {
     size_t len;
     size_t symbol;
+    size_t val;
 };
 
 struct Transition {
@@ -68,8 +69,8 @@ void cfgAddTransition(struct Cfg *cfg, size_t state, enum TokenType token, enum 
     arrayPush(s, &t);
 }
 
-void cfgAddRule(struct Cfg *cfg, size_t symbol, size_t ruleLen) {
-    struct Rule r = {ruleLen, symbol};
+void cfgAddRule(struct Cfg *cfg, size_t symbol, size_t val, size_t ruleLen) {
+    struct Rule r = {ruleLen, symbol, val};
     arrayPush(cfg->rules, &r);
 }
 
@@ -93,7 +94,7 @@ struct TreeNode *cfgParse(struct Cfg *cfg, struct Array *tokens) {
             struct Rule *rule = (struct Rule *)arrayGet(cfg->rules, newState->state);
 
             struct Token tRule;
-            tRule.type = rule->symbol;
+            tRule.type = rule->val;
             tRule.str = NULL;
             struct TreeNode *node = nodeCreate(&tRule, sizeof(struct Token));
             for(size_t i=0; i < rule->len; i++) {

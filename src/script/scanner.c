@@ -347,7 +347,6 @@ struct Array *scannerParse(char *text) {
         struct Dfa *newState = dfaTransition(state, &text[i]);
         if(newState == NULL) {
             if(dfaGetEnd(state) == false) {
-                printf("Error parsing token \"%c\" (%d) on state %ld at %ld\n", text[i], text[i], getStateIndex(state), i);
                 tokenArrayDestroy(out);
                 return NULL;
             }
